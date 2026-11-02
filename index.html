@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ProfitDon — Rebuild Snapshot</title>
+<style>
+  body { background: #06110b; color: #e8e8e8; font-family: Georgia, serif; margin: 0; }
+  header, main, footer { max-width: 860px; margin: 0 auto; padding: 16px; }
+  .green { color: #2fbf71; } .gold { color: #d4af37; }
+  .card { background: #0d2117; border: 1px solid #2fbf71; border-radius: 10px; padding: 16px; margin: 16px 0; }
+  label { display: block; margin: 8px 0 2px; }
+  input { width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #555; background: #111; color: #fff; }
+  button { background: #d4af37; color: #111; border: 0; border-radius: 8px; padding: 10px 16px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+  .banner { background: #3a2f00; border: 1px solid #d4af37; padding: 10px; border-radius: 8px; }
+  pre { white-space: pre-wrap; background: #111; padding: 12px; border-radius: 8px; }
+  .deal { border-top: 1px solid #2fbf71; padding: 8px 0; }
+  small { color: #bbb; }
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="green">Profit</span><span class="gold">Don</span></h1>
+  <p>Build Your Empire. Profit Like A Don.</p>
+  <div class="banner"><strong>PRICING NOT FINALIZED</strong> — No billing in this snapshot. No live marketplace data. Results below are from numbers you enter (manual data) and are recommendations only, not guarantees.</div>
+  <p><small>DON thresholds in this snapshot are DRAFT only: BUY 70, CAUTION 45. Weights: ROI 35%, Margin 30%, Fee Efficiency 20%, Price Buffer 15%.</small></p>
+</header>
+<main>
+  <section class="card" id="analyzer">
+    <h2>Opportunity Analyzer</h2>
+    <label>Selling price ($) <input id="sell" type="number" step="0.01" value="90"></label>
+    <label>Buy cost ($) <input id="buy" type="number" step="0.01" value="53"></label>
+    <label>Tax ($) <input id="tax" type="number" step="0.01" value="0"></label>
+    <label>Shipping ($) <input id="ship" type="number" step="0.01" value="0"></label>
+    <label>Referral rate (e.g. 0.15 for 15%) <input id="refRate" type="number" step="0.01" value="0"></label>
+    <label>Fulfillment fee ($) <input id="fulfill" type="number" step="0.01" value="0"></label>
+    <label>Other fees ($) <input id="other" type="number" step="0.01" value="19"></label>
+    <label>Target ROI (e.g. 0.40 for 40%, optional) <input id="targetRoi" type="number" step="0.01" value="0.40"></label>
+    <label><input id="hasId" type="checkbox"> Product identifier supplied / match confirmed</label>
+    <label><input id="feesOk" type="checkbox"> Fees confirmed (not estimates)</label>
+    <button id="run">Run analysis</button>
+    <button id="save">Save to Deal Vault</button>
+    <pre id="out">Run an analysis to see step-by-step math here.</pre>
+  </section>
+
+  <section class="card" id="vault">
+    <h2>Deal Vault (this snapshot only)</h2>
+    <p><small>In this static snapshot, deals are stored in this browser's localStorage only. In the full app, deals belong to the signed-in user's account and are stored server-side.</small></p>
+    <div id="deals"></div>
+  </section>
+
+  <section class="card" id="academy">
+    <h2>Academy — module topics</h2>
+    <p><small>Module topics only. This snapshot does not reproduce original Academy lesson text word-for-word.</small></p>
+    <ul>
+      <li>What ROI is and how it is calculated</li>
+      <li>Margin vs. ROI — why both matter</li>
+      <li>Fees, shipping, and break-even price</li>
+      <li>Maximum buy cost against a target ROI or margin</li>
+      <li>Reading a DON Score: what each component means</li>
+      <li>Risk flags: thin margin, small price buffer, unconfirmed fees</li>
+      <li>Deal Vault workflow: research, watch, ready to buy, purchased, passed</li>
+      <li>Market Signals from prices you personally observed</li>
+      <li>Seller research: what to record, what not to claim</li>
+      <li>Reports and exports: turning analyses into records</li>
+    </ul>
+  </section>
+</main>
+<footer><p><small>ProfitDon rebuild snapshot — partial backup only. Support: support@profitdon.com (as shown on the original site). Data here is informational / educational only, not financial, investment, or legal advice.</small></p></footer>
+<script type="module">
+import { analyze } from './profit-engine.js';
+let last = null;
+function renderDeals() {
+  const deals = JSON.parse(localStorage.getItem('profitdon-deals') || '[]');
+  document.getElementById('deals').innerHTML = deals.length
+    ? deals.map((d, i) => `<div class="deal"><strong>Deal ${i + 1}</strong> — Sell $${d.sellPrice}, Net $${d.netProfit}, ROI ${d.roiPct}%, Margin ${d.marginPct}%, Verdict: ${d.verdict}, Confidence: ${d.confidence} <br><small>Source: ${d.dataSource}</small></div>`).join('')
+    : '<p>No saved deals yet in this browser.</p>';
+}
+document.getElementById('run').onclick = () => {
+  last = analyze({
+    sellPrice: document.getElementById('sell').value,
+    buyCost: document.getElementById('buy').value,
+    tax: document.getElementById('tax').value,
+    shipping: document.getElementById('ship').value,
+    referralRate: document.getElementById('refRate').value,
+    fulfillment: document.getElementById('fulfill').value,
+    otherFees: document.getElementById('other').value,
+    targetRoi: document.getElementById('targetRoi').value,
+    hasIdentifier: document.getElementById('hasId').checked,
+    feesConfirmed: document.getElementById('feesOk').checked,
+  });
+  document.getElementById('out').textContent = JSON.stringify(last, null, 2);
+};
+document.getElementById('save').onclick = () => {
+  if (!last) { alert('Run an analysis first.'); return; }
+  const deals = JSON.parse(localStorage.getItem('profitdon-deals') || '[]');
+  deals.push(last);
+  localStorage.setItem('profitdon-deals', JSON.stringify(deals));
+  renderDeals();
+};
+renderDeals();
+</script>
+</body>
+</html>
